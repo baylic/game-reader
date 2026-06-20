@@ -6,8 +6,9 @@ Models stay loaded between calls.
 import sys
 import os
 
-MODEL_PATH = r"C:\Users\Bayli\game_reader\Applio\logs\dagoth_ur\dagoth_ur_v2.pth"
-INDEX_PATH = r"C:\Users\Bayli\game_reader\Applio\logs\dagoth_ur\dagoth_ur.index"
+_base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Applio", "logs", "dagoth_ur")
+MODEL_PATH = os.path.join(_base, "dagoth_ur_v2.pth")
+INDEX_PATH = os.path.join(_base, "dagoth_ur.index")
 F0UP_KEY = -12
 
 from rvc_python.infer import RVCInference

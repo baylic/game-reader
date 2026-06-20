@@ -9,8 +9,9 @@ input_wav = sys.argv[1]
 output_wav = sys.argv[2]
 f0up_key = int(sys.argv[3]) if len(sys.argv) > 3 else -12
 
-MODEL_PATH = r"C:\Users\Bayli\game_reader\Applio\logs\dagoth_ur\dagoth_ur_v2.pth"
-INDEX_PATH = r"C:\Users\Bayli\game_reader\Applio\logs\dagoth_ur\dagoth_ur.index"
+_base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Applio", "logs", "dagoth_ur")
+MODEL_PATH = os.path.join(_base, "dagoth_ur_v2.pth")
+INDEX_PATH = os.path.join(_base, "dagoth_ur.index")
 
 from rvc_python.infer import RVCInference
 

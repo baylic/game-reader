@@ -61,9 +61,11 @@ rvc_env\Scripts\pip install rvc-python
 Download `dagoth_ur_v2.pth` and `dagoth_ur.index` from the [Releases page](https://github.com/baylic/game-reader/releases) and place them at:
 
 ```
-Applio\logs\dagoth_ur\dagoth_ur_v2.pth
-Applio\logs\dagoth_ur\dagoth_ur.index
+game-reader\Applio\logs\dagoth_ur\dagoth_ur_v2.pth
+game-reader\Applio\logs\dagoth_ur\dagoth_ur.index
 ```
+
+You will need to create the `Applio\logs\dagoth_ur\` folder manually if it doesn't exist.
 
 ### 5. Run as Administrator
 
