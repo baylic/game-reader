@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environments
+rvc_env/
+applio_env/
+
+# Applio training repo (clone separately if you want to train)
+Applio/
+
+# Audio / video source files
+*.wav
+*.webm
+*.mp3
+
+# Large model files — download from Releases instead
+*.pt
+*.pth
+
+# Test scripts
+test_*.py
+
+# Logs and temp
+train_log.txt
