@@ -11,7 +11,7 @@ import soundfile as sf
 
 _stop_event = threading.Event()
 _kokoro_pipeline = None
-_active_voice = 'emma'
+_active_voice = 'dagoth'
 
 VOICES = ['emma', 'dagoth']
 VOICE_LABELS = {'emma': 'Emma', 'dagoth': 'Dagoth Ur'}
