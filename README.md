@@ -5,7 +5,7 @@ A Windows desktop tool that lets you select a region of your screen, then press 
 Comes with three voices:
 - **Emma** — natural British female voice (Kokoro TTS, runs fully locally on GPU)
 - **Dagoth Ur** — trained RVC voice model from Morrowind, converted from Emma's speech
-- **Narrator** — trained RVC voice model of the Baldur's Gate 3 narrator, converted from Emma's speech
+- **Narrator** — trained RVC voice model of the Baldur's Gate 3 narrator, converted from Emma's speech *(default on launch)*
 
 Everything runs locally. No API keys, no internet required after setup.
 

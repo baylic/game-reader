@@ -12,7 +12,7 @@ import soundfile as sf
 
 _stop_event = threading.Event()
 _kokoro_pipeline = None
-_active_voice = 'dagoth'
+_active_voice = 'narrator'
 
 VOICES = ['emma', 'dagoth', 'narrator']
 VOICE_LABELS = {'emma': 'Emma', 'dagoth': 'Dagoth Ur', 'narrator': 'Narrator'}
@@ -62,8 +62,11 @@ def _warm_rvc():
     # Run one throwaway conversion at startup so CUDA kernels compile now (in the
     # background) instead of on the user's first read (~6s first call -> ~0.5s after).
     try:
+        # Warm the default voice's model so it stays resident; if the default has no
+        # RVC model (e.g. Emma), warm any RVC model just to compile the shared kernels.
+        model_key = RVC_MODELS.get(_active_voice) or next(iter(RVC_MODELS.values()))
         dummy = (np.random.randn(int(24000 * 1.0)).astype(np.float32) * 0.01)
-        _rvc_convert(dummy, 'dagoth')
+        _rvc_convert(dummy, model_key)
         print("RVC warmed up.")
     except Exception as e:
         print(f"RVC warm-up skipped: {e}")
