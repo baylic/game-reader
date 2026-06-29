@@ -2,9 +2,10 @@
 
 A Windows desktop tool that lets you select a region of your screen, then press a hotkey to have the text read aloud. Built for games — works in borderless windowed mode, remembers your selected region across sessions, and runs silently in the system tray.
 
-Comes with two voices:
+Comes with three voices:
 - **Emma** — natural British female voice (Kokoro TTS, runs fully locally on GPU)
 - **Dagoth Ur** — trained RVC voice model from Morrowind, converted from Emma's speech
+- **Narrator** — trained RVC voice model of the Baldur's Gate 3 narrator, converted from Emma's speech
 
 Everything runs locally. No API keys, no internet required after setup.
 
@@ -15,7 +16,7 @@ Everything runs locally. No API keys, no internet required after setup.
 - Draw a box over any text on screen (quest text, tooltips, subtitles, item descriptions)
 - Press a hotkey — the text gets OCR'd and read aloud
 - The region is saved so you only draw it once
-- Switch between Emma and Dagoth Ur voices with a hotkey
+- Switch between Emma, Dagoth Ur, and Narrator voices with a hotkey
 - Stop playback instantly with another hotkey
 
 ---
@@ -49,23 +50,30 @@ pip install torch==2.11.0+cu128 torchvision==0.26.0+cu128 torchaudio==2.11.0+cu1
 
 > If you don't have a CUDA GPU, skip the second line — CPU torch from requirements.txt will be used automatically.
 
-### 3. Set up the RVC voice environment (for Dagoth Ur voice)
+### 3. Set up the RVC voice environment (for the Dagoth Ur and Narrator voices)
 
 ```
 py -3.10 -m venv rvc_env
 rvc_env\Scripts\pip install rvc-python
 ```
 
-### 4. Get the Dagoth Ur voice model
+### 4. Get the RVC voice models
 
-Download `dagoth_ur_v2.pth` and `dagoth_ur.index` from the [Releases page](https://github.com/baylic/game-reader/releases) and place them at:
+Download the model files from the [Releases page](https://github.com/baylic/game-reader/releases) and place them at the paths below. Create the folders manually if they don't exist.
+
+**Dagoth Ur** (from the v1.0 release):
 
 ```
 game-reader\Applio\logs\dagoth_ur\dagoth_ur_v2.pth
 game-reader\Applio\logs\dagoth_ur\dagoth_ur.index
 ```
 
-You will need to create the `Applio\logs\dagoth_ur\` folder manually if it doesn't exist.
+**Narrator** (from the v1.1 release):
+
+```
+game-reader\Applio\logs\bg3_narrator\bg3_narrator_v2.pth
+game-reader\Applio\logs\bg3_narrator\bg3_narrator.index
+```
 
 ### 5. Run as Administrator
 
@@ -84,7 +92,7 @@ python main.py
 | Ctrl+Shift+R | Draw selection region on screen |
 | Ctrl+Shift+T | Read selected region aloud |
 | Ctrl+Shift+S | Stop playback |
-| Ctrl+Shift+V | Cycle between Emma / Dagoth Ur |
+| Ctrl+Shift+V | Cycle between Emma / Dagoth Ur / Narrator |
 | Ctrl+Shift+Q | Quit |
 
 ---
@@ -92,7 +100,7 @@ python main.py
 ## First run notes
 
 - **Kokoro model** (~330MB) downloads automatically on first launch from HuggingFace and is cached locally. Subsequent launches use the cache with no internet needed.
-- **Dagoth Ur first call** takes ~7 seconds while CUDA compiles kernels. Every call after that takes ~4 seconds.
+- **Dagoth Ur / Narrator first call** takes ~7 seconds while CUDA compiles kernels. Every call after that takes ~4 seconds. Switching between the two RVC voices reloads the model weights (~2 seconds) on the first call after the switch.
 - The region you select with Ctrl+Shift+R is saved to `%APPDATA%\GameReader\config.json` and restored on next launch.
 
 ---
@@ -124,7 +132,7 @@ game-reader/
   overlay.py       — fullscreen transparent region selector
   capture.py       — screen capture (mss)
   ocr.py           — Tesseract OCR + preprocessing
-  tts.py           — dual-voice TTS (Kokoro + RVC)
+  tts.py           — multi-voice TTS (Kokoro + RVC)
   config.py        — persistent config (region, hotkeys, voice)
   rvc_worker.py    — persistent RVC subprocess worker
   rvc_infer.py     — RVC inference script (runs in rvc_env)

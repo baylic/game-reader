@@ -13,8 +13,12 @@ _stop_event = threading.Event()
 _kokoro_pipeline = None
 _active_voice = 'dagoth'
 
-VOICES = ['emma', 'dagoth']
-VOICE_LABELS = {'emma': 'Emma', 'dagoth': 'Dagoth Ur'}
+VOICES = ['emma', 'dagoth', 'narrator']
+VOICE_LABELS = {'emma': 'Emma', 'dagoth': 'Dagoth Ur', 'narrator': 'Narrator'}
+# Voices that route Kokoro output through an RVC model (key -> worker model_key)
+RVC_MODELS = {'dagoth': 'dagoth', 'narrator': 'narrator'}
+# Per-voice Kokoro speed override; voices not listed use the caller's speed.
+VOICE_SPEED = {'narrator': 0.8}
 
 _RVC_PYTHON = os.path.join(os.path.dirname(__file__), 'rvc_env', 'Scripts', 'python.exe')
 _RVC_WORKER = os.path.join(os.path.dirname(__file__), 'rvc_worker.py')
@@ -50,7 +54,7 @@ def _start_rvc_worker():
             raise RuntimeError("RVC worker never sent 'ready'")
         _rvc_proc = proc
         _rvc_ready.set()
-        print("Dagoth Ur voice ready.")
+        print("RVC voices ready.")
 
 
 def init():
@@ -105,7 +109,7 @@ def _kokoro_to_numpy(text: str, voice: str, speed: float) -> np.ndarray | None:
     return np.concatenate(chunks)
 
 
-def _rvc_convert(audio: np.ndarray) -> tuple[np.ndarray, int] | None:
+def _rvc_convert(audio: np.ndarray, model_key: str) -> tuple[np.ndarray, int] | None:
     global _rvc_proc
     tmp_in = os.path.join(tempfile.gettempdir(), 'rvc_in.wav')
     tmp_out = os.path.join(tempfile.gettempdir(), 'rvc_out.wav')
@@ -116,7 +120,7 @@ def _rvc_convert(audio: np.ndarray) -> tuple[np.ndarray, int] | None:
         if _rvc_proc is None or _rvc_proc.poll() is not None:
             print("RVC worker died, restarting...")
             _start_rvc_worker()
-        _rvc_proc.stdin.write(f"{tmp_in}|{tmp_out}\n")
+        _rvc_proc.stdin.write(f"{model_key}|{tmp_in}|{tmp_out}\n")
         _rvc_proc.stdin.flush()
         response = _rvc_proc.stdout.readline().strip()
 
@@ -134,11 +138,11 @@ def _speak_emma(text: str, voice: str, speed: float):
     _play(audio, 24000)
 
 
-def _speak_dagoth(text: str, voice: str, speed: float):
+def _speak_rvc(text: str, voice: str, speed: float, model_key: str):
     audio = _kokoro_to_numpy(text, voice, speed)
     if audio is None or _stop_event.is_set():
         return
-    result = _rvc_convert(audio)
+    result = _rvc_convert(audio, model_key)
     if result is None:
         _play(audio, 24000)  # fallback to Emma if RVC fails
         return
@@ -151,9 +155,11 @@ def _speak_dagoth(text: str, voice: str, speed: float):
 def speak(text: str, voice: str = 'bf_emma', speed: float = 1.0):
     _stop_event.clear()
     text = _clean(text)
+    speed = VOICE_SPEED.get(_active_voice, speed)
     try:
-        if _active_voice == 'dagoth':
-            _speak_dagoth(text, voice, speed)
+        model_key = RVC_MODELS.get(_active_voice)
+        if model_key is not None:
+            _speak_rvc(text, voice, speed, model_key)
         else:
             _speak_emma(text, voice, speed)
     except Exception as e:
