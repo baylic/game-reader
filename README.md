@@ -2,10 +2,9 @@
 
 A Windows desktop tool that lets you select a region of your screen, then press a hotkey to have the text read aloud. Built for games — works in borderless windowed mode, remembers your selected region across sessions, and runs silently in the system tray.
 
-Comes with three voices:
-- **Emma** — natural British female voice (Kokoro TTS, runs fully locally on GPU)
-- **Dagoth Ur** — trained RVC voice model from Morrowind, converted from Emma's speech
-- **Narrator** — trained RVC voice model of the Baldur's Gate 3 narrator, converted from Emma's speech *(default on launch)*
+Comes with two voices, both running fully locally on GPU (Kokoro TTS generates the speech, then an RVC model converts the voice):
+- **Dagoth Ur** — trained RVC voice model from Morrowind
+- **Narrator** — trained RVC voice model of the Baldur's Gate 3 narrator *(default on launch)*
 
 Everything runs locally. No API keys, no internet required after setup.
 
@@ -16,7 +15,7 @@ Everything runs locally. No API keys, no internet required after setup.
 - Draw a box over any text on screen (quest text, tooltips, subtitles, item descriptions)
 - Press a hotkey — the text gets OCR'd and read aloud
 - The region is saved so you only draw it once
-- Switch between Emma, Dagoth Ur, and Narrator voices with a hotkey
+- Switch between the Dagoth Ur and Narrator voices with a hotkey
 - Stop playback instantly with another hotkey
 
 ---
@@ -92,7 +91,7 @@ python main.py
 | Ctrl+Shift+R | Draw selection region on screen |
 | Ctrl+Shift+T | Read selected region aloud |
 | Ctrl+Shift+S | Stop playback |
-| Ctrl+Shift+V | Cycle between Emma / Dagoth Ur / Narrator |
+| Ctrl+Shift+V | Cycle between Dagoth Ur / Narrator |
 | Ctrl+Shift+Q | Quit |
 
 ---

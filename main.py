@@ -127,7 +127,7 @@ def main():
     print("  Ctrl+Shift+R  —  Select screen region")
     print("  Ctrl+Shift+T  —  Read selected region aloud")
     print("  Ctrl+Shift+S  —  Stop speech")
-    print("  Ctrl+Shift+V  —  Cycle voice (Emma / Dagoth Ur / Narrator)")
+    print("  Ctrl+Shift+V  —  Cycle voice (Dagoth Ur / Narrator)")
     print("  Ctrl+Shift+Q  —  Quit")
     print("Check the system tray for the icon.")
 

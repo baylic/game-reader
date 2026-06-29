@@ -14,9 +14,10 @@ _stop_event = threading.Event()
 _kokoro_pipeline = None
 _active_voice = 'narrator'
 
-VOICES = ['emma', 'dagoth', 'narrator']
-VOICE_LABELS = {'emma': 'Emma', 'dagoth': 'Dagoth Ur', 'narrator': 'Narrator'}
-# Voices that route Kokoro output through an RVC model (key -> worker model_key)
+VOICES = ['dagoth', 'narrator']
+VOICE_LABELS = {'dagoth': 'Dagoth Ur', 'narrator': 'Narrator'}
+# Every voice routes Kokoro's bf_emma output through an RVC model (key -> worker model_key).
+# bf_emma stays as the internal generation source even though Emma isn't a selectable voice.
 RVC_MODELS = {'dagoth': 'dagoth', 'narrator': 'narrator'}
 # Per-voice Kokoro speed override; voices not listed use the caller's speed.
 VOICE_SPEED = {'narrator': 0.8}
@@ -62,8 +63,8 @@ def _warm_rvc():
     # Run one throwaway conversion at startup so CUDA kernels compile now (in the
     # background) instead of on the user's first read (~6s first call -> ~0.5s after).
     try:
-        # Warm the default voice's model so it stays resident; if the default has no
-        # RVC model (e.g. Emma), warm any RVC model just to compile the shared kernels.
+        # Warm the default voice's model so it stays resident; if the default ever has
+        # no RVC model, warm any RVC model just to compile the shared kernels.
         model_key = RVC_MODELS.get(_active_voice) or next(iter(RVC_MODELS.values()))
         dummy = (np.random.randn(int(24000 * 1.0)).astype(np.float32) * 0.01)
         _rvc_convert(dummy, model_key)
@@ -131,18 +132,6 @@ def _play(audio: np.ndarray, sr: int, tail: float = 0.5):
         time.sleep(0.05)
 
 
-def _kokoro_to_numpy(text: str, voice: str, speed: float) -> np.ndarray | None:
-    chunks = []
-    for _, _, audio in _kokoro_pipeline(text, voice=voice, speed=speed):
-        if _stop_event.is_set():
-            return None
-        if audio is not None:
-            chunks.append(audio.cpu().numpy())
-    if not chunks:
-        return None
-    return np.concatenate(chunks)
-
-
 def _rvc_convert(audio: np.ndarray, model_key: str) -> tuple[np.ndarray, int] | None:
     global _rvc_proc
     tmp_in = os.path.join(tempfile.gettempdir(), 'rvc_in.wav')
@@ -163,13 +152,6 @@ def _rvc_convert(audio: np.ndarray, model_key: str) -> tuple[np.ndarray, int] | 
         return None
     out_audio, out_sr = sf.read(tmp_out)
     return out_audio.astype(np.float32), out_sr
-
-
-def _speak_emma(text: str, voice: str, speed: float):
-    audio = _kokoro_to_numpy(text, voice, speed)
-    if audio is None or _stop_event.is_set():
-        return
-    _play(audio, 24000)
 
 
 def _speak_rvc(text: str, voice: str, speed: float, model_key: str):
@@ -220,11 +202,7 @@ def speak(text: str, voice: str = 'bf_emma', speed: float = 1.0):
     text = _clean(text)
     speed = VOICE_SPEED.get(_active_voice, speed)
     try:
-        model_key = RVC_MODELS.get(_active_voice)
-        if model_key is not None:
-            _speak_rvc(text, voice, speed, model_key)
-        else:
-            _speak_emma(text, voice, speed)
+        _speak_rvc(text, voice, speed, RVC_MODELS[_active_voice])
     except Exception as e:
         print(f"TTS error: {e}")
 
