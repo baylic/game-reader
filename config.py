@@ -13,6 +13,9 @@ DEFAULT_CONFIG = {
     "hotkey_cycle": "ctrl+shift+v",
     "tts_voice": "bf_emma",
     "tts_speed": 1.0,
+    # Continuously OCR the region in the background so a read can use cached text
+    # when the screen hasn't changed (lower keystroke-to-voice latency, light CPU).
+    "prefetch_ocr": True,
 }
 
 _config = dict(DEFAULT_CONFIG)

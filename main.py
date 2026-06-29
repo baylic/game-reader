@@ -13,6 +13,7 @@ import capture
 import ocr
 import tts
 import overlay
+import prefetch
 
 # Must be called before any window creation to fix DPI scaling on high-DPI displays
 ctypes.windll.shcore.SetProcessDpiAwareness(2)
@@ -44,13 +45,17 @@ def _read_region():
     except Exception as e:
         print(f"Capture error: {e}")
         return
-    if capture.is_black_frame(img):
-        tts.speak(
-            "Screen capture failed. Switch your game to borderless windowed mode.",
-            config.get('tts_voice'), config.get('tts_speed', 1.0),
-        )
-        return
-    text = ocr.run_ocr(img)
+    # Use background-prefetched text if the screen hasn't changed since last capture
+    text = prefetch.lookup(prefetch.frame_hash(img))
+    if text is None:
+        if capture.is_black_frame(img):
+            tts.speak(
+                "Screen capture failed. Switch your game to borderless windowed mode.",
+                config.get('tts_voice'), config.get('tts_speed', 1.0),
+            )
+            return
+        text = ocr.run_ocr(img)
+        prefetch.note(prefetch.frame_hash(img), text)
     if not text:
         tts.speak("No text detected.", config.get('tts_voice'), config.get('tts_speed', 1.0))
         return
@@ -72,6 +77,7 @@ def _cycle_voice():
 
 
 def _shutdown():
+    prefetch.stop()
     tts.stop()
     if _tray:
         _tray.stop()
@@ -110,6 +116,8 @@ def main():
 
     config.load()
     tts.init()
+    if config.get('prefetch_ocr', True):
+        prefetch.start(config.get_region)
 
     keyboard.add_hotkey(config.get('hotkey_select'), lambda: _queue.put('select'))
     keyboard.add_hotkey(config.get('hotkey_read'), lambda: _executor.submit(_read_region))
