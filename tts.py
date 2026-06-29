@@ -81,9 +81,23 @@ def get_active_label() -> str:
     return VOICE_LABELS[_active_voice]
 
 
+# Leading "Speaker Name:" label — 1–4 capitalised words then a colon, with
+# actual dialogue following. Matches e.g. "Astarion:", "The Narrator:", "Lae'zel:".
+_SPEAKER_RE = re.compile(r"^[A-Z][\w'’.\-]*(?:\s+[A-Z][\w'’.\-]*){0,3}\s*:\s*(?=\S)")
+
+
+def _strip_speaker(text: str) -> str:
+    # Drop a leading speaker name so only the spoken line is read aloud.
+    m = _SPEAKER_RE.match(text)
+    if m and m.end() < len(text):
+        return text[m.end():]
+    return text
+
+
 def _clean(text: str) -> str:
     text = re.sub(r'\n+', ' ', text)
-    return re.sub(r' +', ' ', text).strip()
+    text = re.sub(r' +', ' ', text).strip()
+    return _strip_speaker(text)
 
 
 def _play(audio: np.ndarray, sr: int):
