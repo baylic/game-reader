@@ -46,7 +46,7 @@ def _ensure_model(key):
     rvc.set_params(
         f0method="rmvpe",
         f0up_key=cfg["f0up_key"],
-        index_rate=0.75,
+        index_rate=0.0,  # skip FAISS index retrieval: ~210ms faster per call (beta)
         filter_radius=3,
         resample_sr=0,
         rms_mix_rate=1,
