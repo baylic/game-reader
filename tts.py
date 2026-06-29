@@ -1,4 +1,5 @@
 import os
+import queue
 import re
 import subprocess
 import tempfile
@@ -57,6 +58,22 @@ def _start_rvc_worker():
         print("RVC voices ready.")
 
 
+def _warm_rvc():
+    # Run one throwaway conversion at startup so CUDA kernels compile now (in the
+    # background) instead of on the user's first read (~6s first call -> ~0.5s after).
+    try:
+        dummy = (np.random.randn(int(24000 * 1.0)).astype(np.float32) * 0.01)
+        _rvc_convert(dummy, 'dagoth')
+        print("RVC warmed up.")
+    except Exception as e:
+        print(f"RVC warm-up skipped: {e}")
+
+
+def _start_and_warm():
+    _start_rvc_worker()
+    _warm_rvc()
+
+
 def init():
     global _kokoro_pipeline
     os.environ['HF_HUB_OFFLINE'] = '1'
@@ -64,8 +81,8 @@ def init():
     from kokoro import KPipeline
     _kokoro_pipeline = KPipeline(lang_code='b')
     print("Kokoro TTS ready.")
-    # Pre-warm RVC worker in background so Dagoth Ur is instant on first use
-    threading.Thread(target=_start_rvc_worker, daemon=True).start()
+    # Pre-warm RVC worker + compile CUDA kernels in background so the first read is instant
+    threading.Thread(target=_start_and_warm, daemon=True).start()
 
 
 def cycle_voice() -> str:
@@ -100,11 +117,11 @@ def _clean(text: str) -> str:
     return _strip_speaker(text)
 
 
-def _play(audio: np.ndarray, sr: int):
+def _play(audio: np.ndarray, sr: int, tail: float = 0.5):
     sd.play(audio, samplerate=sr)
     duration = len(audio) / sr
     start = time.time()
-    while time.time() - start < duration + 0.5:
+    while time.time() - start < duration + tail:
         if _stop_event.is_set():
             sd.stop()
             return
@@ -153,17 +170,46 @@ def _speak_emma(text: str, voice: str, speed: float):
 
 
 def _speak_rvc(text: str, voice: str, speed: float, model_key: str):
-    audio = _kokoro_to_numpy(text, voice, speed)
-    if audio is None or _stop_event.is_set():
-        return
-    result = _rvc_convert(audio, model_key)
-    if result is None:
-        _play(audio, 24000)  # fallback to Emma if RVC fails
-        return
-    out_audio, out_sr = result
-    if _stop_event.is_set():
-        return
-    _play(out_audio, out_sr)
+    # Pipeline by sentence: a background thread generates each Kokoro segment and
+    # RVC-converts it, while this thread plays segments as soon as they're ready.
+    # Cuts time-to-first-audio to roughly one sentence instead of the whole passage.
+    audio_q: queue.Queue = queue.Queue(maxsize=4)
+
+    def _put(item) -> bool:
+        # Enqueue, but bail out if playback was stopped so we never block forever
+        # on a full queue after the consumer has exited.
+        while not _stop_event.is_set():
+            try:
+                audio_q.put(item, timeout=0.1)
+                return True
+            except queue.Full:
+                continue
+        return False
+
+    def produce():
+        try:
+            for _, _, audio in _kokoro_pipeline(text, voice=voice, speed=speed):
+                if _stop_event.is_set():
+                    return
+                if audio is None:
+                    continue
+                seg = audio.cpu().numpy()
+                result = _rvc_convert(seg, model_key)
+                if result is None:
+                    result = (seg, 24000)  # fallback to Emma segment if RVC fails
+                if not _put(result):
+                    return
+        finally:
+            _put(None)  # sentinel: no more segments
+
+    threading.Thread(target=produce, daemon=True).start()
+
+    while not _stop_event.is_set():
+        item = audio_q.get()
+        if item is None:
+            return
+        out_audio, out_sr = item
+        _play(out_audio, out_sr, tail=0.1)  # small tail keeps sentences gapless
 
 
 def speak(text: str, voice: str = 'bf_emma', speed: float = 1.0):

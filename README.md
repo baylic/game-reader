@@ -100,7 +100,7 @@ python main.py
 ## First run notes
 
 - **Kokoro model** (~330MB) downloads automatically on first launch from HuggingFace and is cached locally. Subsequent launches use the cache with no internet needed.
-- **Dagoth Ur / Narrator first call** takes ~7 seconds while CUDA compiles kernels. Every call after that takes ~4 seconds. Switching between the two RVC voices reloads the model weights (~2 seconds) on the first call after the switch.
+- **Dagoth Ur / Narrator** voices warm up in the background at startup (a throwaway conversion compiles the CUDA kernels), so your first read is fast (~0.5s) instead of paying a ~6s one-time compile. Switching between the two RVC voices reloads the model weights (~2 seconds) on the first call after the switch. Long passages stream sentence-by-sentence, so audio starts as soon as the first part is ready.
 - The region you select with Ctrl+Shift+R is saved to `%APPDATA%\GameReader\config.json` and restored on next launch.
 
 ---
