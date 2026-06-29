@@ -18,7 +18,7 @@ VOICE_LABELS = {'emma': 'Emma', 'dagoth': 'Dagoth Ur', 'narrator': 'Narrator'}
 # Voices that route Kokoro output through an RVC model (key -> worker model_key)
 RVC_MODELS = {'dagoth': 'dagoth', 'narrator': 'narrator'}
 # Per-voice Kokoro speed override; voices not listed use the caller's speed.
-VOICE_SPEED = {'narrator': 0.8}
+VOICE_SPEED = {'narrator': 0.9}
 
 _RVC_PYTHON = os.path.join(os.path.dirname(__file__), 'rvc_env', 'Scripts', 'python.exe')
 _RVC_WORKER = os.path.join(os.path.dirname(__file__), 'rvc_worker.py')
